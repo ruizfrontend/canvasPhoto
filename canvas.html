@@ -5,13 +5,18 @@
 	<title>Document</title>
 </head>
 <body>
+<style>
+.btn { display: block; }
+.btn.act { color: red; }
+</style>
 
-<a href="#" class="flt act" data-flt="sp">Sepia</a>
-<a href="#" class="flt" data-flt="bn">B/n</a>
-<a href="#" class="flt" data-flt="ct10">Contraste 10</a>
-<a href="#" class="flt" data-flt="ct50">Contraste 50</a>
-<a href="#" class="flt" data-flt="bt10">Brightness 10</a>
-<a href="#" class="flt" data-flt="bt50">Brightness 50</a>
+<a href="#" class="btn flt act" data-flt="sp">Sepia</a>
+<a href="#" class="btn flt" data-flt="bn">B/n</a>
+<a href="#" class="btn flt" data-flt="ct10">Contraste 10</a>
+<a href="#" class="btn flt" data-flt="ct50">Contraste 50</a>
+<a href="#" class="btn flt" data-flt="bt10">Brightness 10</a>
+<a href="#" class="btn flt" data-flt="bt50">Brightness 50</a>
+<a href="#" class="btn reset" >reset</a>
 
 <canvas id="canvas"></canvas>
 
@@ -32,7 +37,7 @@ $(function(){
 
 	var pincel = 60;
 	var presion = 10;
-	var activeFlt = 'bn';
+	var activeFlt = 'sp';
 	var mousePressed = false;
 	
 	//Load image to the canvas
@@ -122,6 +127,12 @@ $(function(){
 		activeFlt = $(this).data('flt');
 		$('.flt.act').removeClass('act');
 		$(this).addClass('act');
+		return false;
+	})
+
+	$('.reset').click(function(){
+		var img = $img[0];
+		ctx.drawImage(img, 0, 0, img.width, img.height);
 		return false;
 	})
 
