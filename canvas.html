@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	
+<canvas id="canvas"></canvas>
+
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+
+	<script>
+$(function(){
+
+	var $canvas = $('#canvas');
+	var ctx = $canvas[0].getContext('2d');
+	
+	//Load image to the canvas
+	var $img = $('<img>');
+
+	$img
+		.load(imgLoad)
+		.attr('src', './economico-Pedro-Sanchez-Manuel-Escudero_EDIIMA20170523_0902_5.jpg');
+	
+	function imgLoad() {
+		var img = $img[0];
+
+		$canvas.attr({
+			'width': img.width,
+			'height': img.height
+		});
+
+		ctx.drawImage(img, 0, 0, img.width, img.height);
+
+		// greyscale(ctx, $canvas[0]);
+	}
+
+
+
+	function greyscale(ctx, canvas) {
+		var data = ctx.getImageData(0, 0, canvas.width, canvas.height); //get pixel data
+		var pixels = data.data;
+
+		for(var i = 0; i < pixels.length; i += 4) {
+
+			var brightness = (pixels[i] + pixels[i+1] + pixels[i+2]) / 3; //get the brightness
+				// This is not the visually correct brightness
+			pixels[i] = pixels[i + 1] = pixels[i + 2] = brightness;
+		}
+
+		ctx.putImageData(data, 0, 0);//put the image data back
+	}
+
+
+		// pone en blanco línea y columna de puntero
+	$canvas.on('mousemove', function(e){
+		
+		var w = this.width;
+		var h = this.height;
+		var oY = e.offsetY;
+		var oX = e.offsetX;
+
+			// reset the canvas
+		ctx.drawImage($img[0], 0, 0, w, h);
+
+			// get pixels
+		var data = ctx.getImageData(0, 0, w, h); //get pixel data
+		var pixels = data.data;
+		
+		for (var i = w - 1; i >= 0; i--) {
+			var top = oY * w * 4;
+			pixels[top + i * 4] = pixels[top + 1 + i * 4] = pixels[top + 2 + i * 4] = 255
+		};
+		
+		for (var i = h - 1; i >= 0; i--) {
+			var pos = 4 * (oX + (i * w));
+			pixels[pos] = pixels[1 + pos] = pixels[2 + pos] = 255
+		};
+
+			// put pixels in the canvas
+		ctx.putImageData(data, 0, 0);
+	})
+
+
+});
+
+/*
+	pixels[i] is the red component
+	pixels[i+1] is the green component
+	pixels[i+2] is the blue component
+	pixels[i+3] is the alpha component
+*/
+
+	// image.onload = function(){
+	// 	//set the canvas' width and height to the image's one
+	// 	canvas.width = this.width;
+	// 	canvas.height = this.height;
+	// 	ctx.drawImage(this,0,0,this.width,this.height);
+	// 	//Greyscale effect
+	// 	greyscale();
+	// 	//Sepia effect
+	// 	// sepia();
+	// 	//make it brighter
+	// 	brightness(70);
+	// 	//add spme more contrast
+	// 	contrast(90);
+	// }
+
+
+
+//sepia effect - make photos looks old
+function sepia(ctx){
+	var data = ctx.getImageData(0,0,canvas.width,canvas.height);//get pixel data
+	var pixels = data.data;
+	for(var i = 0; i < pixels.length; i+=4){//loop through all data
+		/*
+		pixels[i] is the red component
+		pixels[i+1] is the green component
+		pixels[i+2] is the blue component
+		pixels[i+3] is the alpha component
+		*/
+		//Sepia formula
+		pixels[i] = 0.393*pixels[i] + 0.769*pixels[i+1] + 0.189*pixels[i+2];
+		pixels[i+1] = 0.349*pixels[i] + 0.686*pixels[i+1] + 0.168*pixels[i+2];
+		pixels[i+2] = 0.272*pixels[i] + 0.534*pixels[i+1] + 0.131*pixels[i+2];
+	}
+	data.data = pixels;
+	ctx.putImageData(data,0,0);//put the image data back
+}
+
+//brightness effect
+function brightness(amount){
+	var data = ctx.getImageData(0,0,canvas.width,canvas.height);//get pixel data
+	var pixels = data.data;
+	for(var i = 0; i < pixels.length; i+=4){//loop through all data
+		/*
+		pixels[i] is the red component
+		pixels[i+1] is the green component
+		pixels[i+2] is the blue component
+		pixels[i+3] is the alpha component
+		*/
+		pixels[i] += amount;
+		pixels[i+1] += amount;
+		pixels[i+2] += amount;
+	}
+	data.data = pixels;
+	ctx.putImageData(data,0,0);//put the image data back
+}
+
+//contrast effect
+function contrast(amount){
+	var data = ctx.getImageData(0,0,canvas.width,canvas.height);//get pixel data
+	var pixels = data.data;
+	for(var i = 0; i < pixels.length; i+=4){//loop through all data
+		/*
+		pixels[i] is the red component
+		pixels[i+1] is the green component
+		pixels[i+2] is the blue component
+		pixels[i+3] is the alpha component
+		*/
+		var brightness = (pixels[i]+pixels[i+1]+pixels[i+2])/3; //get the brightness
+		
+		pixels[i] += brightness > 127 ? amount : -amount;
+		pixels[i+1] += brightness > 127 ? amount : -amount;
+		pixels[i+2] += brightness > 127 ? amount : -amount;
+	}
+	data.data = pixels;
+	ctx.putImageData(data,0,0);//put the image data back
+}
+
+	</script>
+</body>
+</html>
