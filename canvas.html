@@ -23,6 +23,8 @@ $(function(){
 		.load(imgLoad)
 		.attr('src', './economico-Pedro-Sanchez-Manuel-Escudero_EDIIMA20170523_0902_5.jpg');
 	
+	var baseImgData = null;
+
 	function imgLoad() {
 		var img = $img[0];
 
@@ -32,6 +34,7 @@ $(function(){
 		});
 
 		ctx.drawImage(img, 0, 0, img.width, img.height);
+		baseImgData = ctx.getImageData(0, 0, img.width, img.height);
 
 		// greyscale(ctx, $canvas[0]);
 	}
@@ -54,6 +57,7 @@ $(function(){
 
 
 		// pone en blanco línea y columna de puntero
+
 	$canvas.on('mousemove', function(e){
 		
 		var w = this.width;
@@ -64,9 +68,10 @@ $(function(){
 			// reset the canvas
 		ctx.drawImage($img[0], 0, 0, w, h);
 
-			// get pixels
-		var data = ctx.getImageData(0, 0, w, h); //get pixel data
-		var pixels = data.data;
+			// get pixels from saved state
+		var imgData = ctx.createImageData(baseImgData);
+		var pixels = imgData.data;
+		imgData.data.set(baseImgData.data);
 		
 		for (var i = w - 1; i >= 0; i--) {
 			var top = oY * w * 4;
@@ -78,8 +83,7 @@ $(function(){
 			pixels[pos] = pixels[1 + pos] = pixels[2 + pos] = 255
 		};
 
-			// put pixels in the canvas
-		ctx.putImageData(data, 0, 0);
+		ctx.putImageData(imgData, 0, 0);
 	})
 
 
