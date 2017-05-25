@@ -36,7 +36,8 @@ $(function(){
 		ctx.drawImage(img, 0, 0, img.width, img.height);
 		baseImgData = ctx.getImageData(0, 0, img.width, img.height);
 
-		// greyscale(ctx, $canvas[0]);
+		greyscale(ctx, $canvas[0]);
+
 	}
 
 
@@ -57,7 +58,6 @@ $(function(){
 
 
 		// pone en blanco línea y columna de puntero
-
 	$canvas.on('mousemove', function(e){
 		
 		var w = this.width;
@@ -65,22 +65,24 @@ $(function(){
 		var oY = e.offsetY;
 		var oX = e.offsetX;
 
-			// reset the canvas
-		ctx.drawImage($img[0], 0, 0, w, h);
-
 			// get pixels from saved state
-		var imgData = ctx.createImageData(baseImgData);
+		var imgData = ctx.getImageData(0, 0, $img[0].width, $img[0].height);
 		var pixels = imgData.data;
-		imgData.data.set(baseImgData.data);
 		
-		for (var i = w - 1; i >= 0; i--) {
-			var top = oY * w * 4;
-			pixels[top + i * 4] = pixels[top + 1 + i * 4] = pixels[top + 2 + i * 4] = 255
-		};
-		
-		for (var i = h - 1; i >= 0; i--) {
-			var pos = 4 * (oX + (i * w));
-			pixels[pos] = pixels[1 + pos] = pixels[2 + pos] = 255
+		for (var x = 0; x < w; x++) {
+			for (var y = 0; y < h; y++) {
+
+					// pixeles afectados
+					
+				if(Math.abs(x - oX) < 40 && Math.abs(y - oY) < 40) {
+					var pos = (x + (y * w)) * 4;
+					var prop = Math.pow(1 - ((Math.abs(x - oX) + Math.abs(y - oY)) / 80), 10);
+					if(x > 125 && x < 130 && y > 305 && y < 310) console.log(prop, baseImgData.data[pos], pixels[pos], pixels[pos] + (prop * (baseImgData.data[pos] - pixels[pos])));
+					pixels[pos] += prop * (baseImgData.data[pos] - pixels[pos]);
+					pixels[pos + 1] += prop * (baseImgData.data[pos + 1] - pixels[pos + 1]);
+					pixels[pos + 2] += prop * (baseImgData.data[pos + 2] - pixels[pos + 2]);
+				}
+			}
 		};
 
 		ctx.putImageData(imgData, 0, 0);
