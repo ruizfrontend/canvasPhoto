@@ -5,26 +5,43 @@
 	<title>Document</title>
 </head>
 <body>
-	
+
+<a href="#" class="flt act" data-flt="sp">Sepia</a>
+<a href="#" class="flt" data-flt="bn">B/n</a>
+<a href="#" class="flt" data-flt="ct10">Contraste 10</a>
+<a href="#" class="flt" data-flt="ct50">Contraste 50</a>
+<a href="#" class="flt" data-flt="bt10">Brightness 10</a>
+<a href="#" class="flt" data-flt="bt50">Brightness 50</a>
+
 <canvas id="canvas"></canvas>
 
 <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
 
 	<script>
+/*
+	px[i] rojo
+	px[i+1] verde
+	px[i+2] azul
+	px[i+3] alfa
+*/
+
 $(function(){
 
 	var $canvas = $('#canvas');
 	var ctx = $canvas[0].getContext('2d');
+
+	var pincel = 60;
+	var presion = 10;
+	var activeFlt = 'bn';
+	var mousePressed = false;
 	
 	//Load image to the canvas
-	var $img = $('<img>');
-
-	$img
+	var $img = $('<img>')
 		.load(imgLoad)
-		.attr('src', './economico-Pedro-Sanchez-Manuel-Escudero_EDIIMA20170523_0902_5.jpg');
-	
-	var baseImgData = null;
+		.attr('src', './2108594.jpg');
 
+
+		// imagen lista => inicialización
 	function imgLoad() {
 		var img = $img[0];
 
@@ -34,146 +51,128 @@ $(function(){
 		});
 
 		ctx.drawImage(img, 0, 0, img.width, img.height);
-		baseImgData = ctx.getImageData(0, 0, img.width, img.height);
-
-		greyscale(ctx, $canvas[0]);
-
 	}
-
-
-
-	function greyscale(ctx, canvas) {
-		var data = ctx.getImageData(0, 0, canvas.width, canvas.height); //get pixel data
-		var pixels = data.data;
-
-		for(var i = 0; i < pixels.length; i += 4) {
-
-			var brightness = (pixels[i] + pixels[i+1] + pixels[i+2]) / 3; //get the brightness
-				// This is not the visually correct brightness
-			pixels[i] = pixels[i + 1] = pixels[i + 2] = brightness;
-		}
-
-		ctx.putImageData(data, 0, 0);//put the image data back
-	}
-
 
 		// pone en blanco línea y columna de puntero
 	$canvas.on('mousemove', function(e){
 		
+		if(!mousePressed) return;
+
 		var w = this.width;
 		var h = this.height;
 		var oY = e.offsetY;
 		var oX = e.offsetX;
 
-			// get pixels from saved state
+			// obtiene los pixes
 		var imgData = ctx.getImageData(0, 0, $img[0].width, $img[0].height);
 		var pixels = imgData.data;
-		
+
+			// recorre pixels		
 		for (var x = 0; x < w; x++) {
 			for (var y = 0; y < h; y++) {
 
-					// pixeles afectados
-					
-				if(Math.abs(x - oX) < 40 && Math.abs(y - oY) < 40) {
+					// diferencia entre el pixel y el cursor
+				var difX = Math.abs(x - oX);
+				var difY = Math.abs(y - oY);
+
+					// filtra pixeles afectados
+				if(difX < pincel && difY < pincel) {
+
+						// posición del pixel
 					var pos = (x + (y * w)) * 4;
-					var prop = Math.pow(1 - ((Math.abs(x - oX) + Math.abs(y - oY)) / 80), 10);
-					if(x > 125 && x < 130 && y > 305 && y < 310) console.log(prop, baseImgData.data[pos], pixels[pos], pixels[pos] + (prop * (baseImgData.data[pos] - pixels[pos])));
-					pixels[pos] += prop * (baseImgData.data[pos] - pixels[pos]);
-					pixels[pos + 1] += prop * (baseImgData.data[pos + 1] - pixels[pos + 1]);
-					pixels[pos + 2] += prop * (baseImgData.data[pos + 2] - pixels[pos + 2]);
+						
+						// calcula distancia con cursor
+					var prop = Math.pow(1 - ((difX + difY) / (2 * pincel)), presion);
+
+					var pixelProcess = null;
+
+						// actualiza los pixes en función de la distancia del ratón
+					switch (activeFlt) {
+						case 'bn':
+							pixelProcess = bnFilter(pixels[pos], pixels[pos + 1], pixels[pos + 2]);
+							break;
+						case 'sp':
+							pixelProcess = sepiaFilter(pixels[pos], pixels[pos + 1], pixels[pos + 2]);
+							break;
+						case 'ct10':
+							pixelProcess = contrastFilter(pixels[pos], pixels[pos + 1], pixels[pos + 2], 1);
+							break;
+						case 'ct50':
+							pixelProcess = contrastFilter(pixels[pos], pixels[pos + 1], pixels[pos + 2], 5);
+							break;
+						case 'bt10':
+							pixelProcess = brightnessFilter(pixels[pos], pixels[pos + 1], pixels[pos + 2], 10);
+							break;
+						case 'bt50':
+							pixelProcess = brightnessFilter(pixels[pos], pixels[pos + 1], pixels[pos + 2], 50);
+							break;
+					}
+					pixels[pos] += prop * (pixelProcess[0] - pixels[pos]);
+					pixels[pos + 1] += prop * (pixelProcess[1] - pixels[pos + 1]);
+					pixels[pos + 2] += prop * (pixelProcess[2] - pixels[pos + 2]);
 				}
 			}
 		};
 
+			// pinta pixels
 		ctx.putImageData(imgData, 0, 0);
 	})
+
+	$('.flt').click(function(){
+		activeFlt = $(this).data('flt');
+		$('.flt.act').removeClass('act');
+		$(this).addClass('act');
+		return false;
+	})
+
+	$canvas
+		.mousedown(function(){
+			mousePressed = true;
+		})
+		.mouseup(function(){
+			mousePressed = false;
+		})
+
+		/* ------ FILTROS ------ */
+	function bnFilter(r, g, b) {
+		var brightness = (r + g + b) / 3;
+		return [brightness, brightness, brightness];
+	}
+
+
+	function sepiaFilter(r, g, b) {
+		return [
+			 0.393 * r + 0.769 * g + 0.189 * b,
+			 0.349 * r + 0.686 * g + 0.168 * b,
+			 0.272 * r + 0.534 * g + 0.131 * b
+		];
+	}
+
+	function brightnessFilter(r, g, b, ammount) {
+
+		return [
+			 r + ammount,
+			 g + ammount,
+			 b + ammount,
+		];
+	}
+
+	function contrastFilter(r, g, b, ammount) {
+		
+		var brightness = (r + g + b) / 3; 
+
+		return [
+			 r + brightness > 127 ? ammount : -ammount,
+			 g + brightness > 127 ? ammount : -ammount,
+			 b + brightness > 127 ? ammount : -ammount,
+		];
+	}
+
+
 
 
 });
 
-/*
-	pixels[i] is the red component
-	pixels[i+1] is the green component
-	pixels[i+2] is the blue component
-	pixels[i+3] is the alpha component
-*/
-
-	// image.onload = function(){
-	// 	//set the canvas' width and height to the image's one
-	// 	canvas.width = this.width;
-	// 	canvas.height = this.height;
-	// 	ctx.drawImage(this,0,0,this.width,this.height);
-	// 	//Greyscale effect
-	// 	greyscale();
-	// 	//Sepia effect
-	// 	// sepia();
-	// 	//make it brighter
-	// 	brightness(70);
-	// 	//add spme more contrast
-	// 	contrast(90);
-	// }
-
-
-
-//sepia effect - make photos looks old
-function sepia(ctx){
-	var data = ctx.getImageData(0,0,canvas.width,canvas.height);//get pixel data
-	var pixels = data.data;
-	for(var i = 0; i < pixels.length; i+=4){//loop through all data
-		/*
-		pixels[i] is the red component
-		pixels[i+1] is the green component
-		pixels[i+2] is the blue component
-		pixels[i+3] is the alpha component
-		*/
-		//Sepia formula
-		pixels[i] = 0.393*pixels[i] + 0.769*pixels[i+1] + 0.189*pixels[i+2];
-		pixels[i+1] = 0.349*pixels[i] + 0.686*pixels[i+1] + 0.168*pixels[i+2];
-		pixels[i+2] = 0.272*pixels[i] + 0.534*pixels[i+1] + 0.131*pixels[i+2];
-	}
-	data.data = pixels;
-	ctx.putImageData(data,0,0);//put the image data back
-}
-
-//brightness effect
-function brightness(amount){
-	var data = ctx.getImageData(0,0,canvas.width,canvas.height);//get pixel data
-	var pixels = data.data;
-	for(var i = 0; i < pixels.length; i+=4){//loop through all data
-		/*
-		pixels[i] is the red component
-		pixels[i+1] is the green component
-		pixels[i+2] is the blue component
-		pixels[i+3] is the alpha component
-		*/
-		pixels[i] += amount;
-		pixels[i+1] += amount;
-		pixels[i+2] += amount;
-	}
-	data.data = pixels;
-	ctx.putImageData(data,0,0);//put the image data back
-}
-
-//contrast effect
-function contrast(amount){
-	var data = ctx.getImageData(0,0,canvas.width,canvas.height);//get pixel data
-	var pixels = data.data;
-	for(var i = 0; i < pixels.length; i+=4){//loop through all data
-		/*
-		pixels[i] is the red component
-		pixels[i+1] is the green component
-		pixels[i+2] is the blue component
-		pixels[i+3] is the alpha component
-		*/
-		var brightness = (pixels[i]+pixels[i+1]+pixels[i+2])/3; //get the brightness
-		
-		pixels[i] += brightness > 127 ? amount : -amount;
-		pixels[i+1] += brightness > 127 ? amount : -amount;
-		pixels[i+2] += brightness > 127 ? amount : -amount;
-	}
-	data.data = pixels;
-	ctx.putImageData(data,0,0);//put the image data back
-}
 
 	</script>
 </body>
